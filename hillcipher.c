@@ -1,86 +1,101 @@
-//John Kranz & Alex Price
-//CIS3362
-//9-12-2014
-//Assignment 3 - week3asgn.c
-
-
-//Includes
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <ctype.h>
-
-void padding(char plaintext[], int n);
-void hillencrypt(char plaintext[], int mat[][10], int n);
-
-int main(){
-
-//Length of matrix dimension
-int i , j;
-int n = 0;
-int mat[10][10];
-
-//Reads file in & error checks
-FILE *fptr;
-fptr=(fopen("hill.txt","r"));
-if(fptr==NULL){
-	printf("Error. Cannot find file.\n");
-	exit(1);
+float encrypt[3][1], decrypt[3][1], a[3][3], b[3][3], mes[3][1], c[3][3];
+ 
+void encryption();    //encrypts the message
+void decryption();    //decrypts the message
+void getKeyMessage();    //gets key and message from user
+void inverse();        //finds inverse of key matrix
+ 
+void main() {
+    getKeyMessage();
+    encryption();
+    decryption();
 }
-
-//Starts at the first line of text file
-fseek(fptr, 0L, SEEK_SET);
-
-//Read size of matrix
-fscanf(fptr, "%d", &n);
-for(i=0; i<n; i++)
-	for (j=0; j<n; j++)
-		fscanf(fptr, "%d", &mat[i][j]);
-
-//Read plaintext message
-char plaintext[100];
-fscanf(fptr, "%s", plaintext);
-fclose(fptr);
-
-//Call encrypt function and pass text & size
-
-hillencrypt(plaintext, mat, n);
-return 0;
+ 
+void encryption() {
+    int i, j, k;
+    
+    for(i = 0; i < 3; i++)
+        for(j = 0; j < 1; j++)
+            for(k = 0; k < 3; k++)
+                encrypt[i][j] = encrypt[i][j] + a[i][k] * mes[k][j];
+    
+    printf("\nEncrypted string is: ");
+    for(i = 0; i < 3; i++)
+        printf("%c", (char)(fmod(encrypt[i][0], 26) + 97));
+ 
 }
-
-//Padding with x
-void padding(char plaintext[], int n){
-	int i = 0;
-	//get original length of plaintext
-	int original = strlen(plaintext);
-	//Pads
-	int padding = (n - original%n)%n;
-	int new = original + padding;
-
-	for (i=original; i<new; i++){
-		plaintext[i] = 'x';
-	}
-	plaintext[new] = '\0';
+ 
+void decryption() {
+    int i, j, k;
+    
+    inverse();
+    
+    for(i = 0; i < 3; i++)
+        for(j = 0; j < 1; j++)
+            for(k = 0; k < 3; k++)
+                decrypt[i][j] = decrypt[i][j] + b[i][k] * encrypt[k][j];
+    
+    printf("\nDecrypted string is: ");
+    for(i = 0; i < 3; i++)
+        printf("%c", (char)(fmod(decrypt[i][0], 26) + 97));
+    
+    printf("\n");
 }
-
-//Takes in plain text, matrix, and size of matrix
-void hillencrypt(char plaintext[], int mat[][10], int n){
-int i = 0;
-int j, k;
-char hillcipher[10+1];
-
-padding(plaintext, n);
-
-//Gets length of plaintext & loops through
-while (i<strlen(plaintext)){
-	for(j=0; j<n; j++){
-		int key = 0;
-		for (k=0; k<n; k++)
-			key = (key+mat[j][k]*(plaintext[i+k]- 'a'))%26; // Rotation
-		hillcipher[j] = (char)('a' + key);
-	}
-	hillcipher[n] = '\0';
-	i += n;
-
-	printf("%s", hillcipher);
-}}
+ 
+void getKeyMessage() {
+    int i, j;
+    char msg[3];
+ 
+    printf("Enter 3x3 matrix for key (It should be inversible):\n");
+    
+    for(i = 0; i < 3; i++)
+        for(j = 0; j < 3; j++) {
+            scanf("%f", &a[i][j]);
+            c[i][j] = a[i][j];
+        }
+    
+    printf("\nEnter a 3 letter string: ");
+    scanf("%s", msg);
+    
+    for(i = 0; i < 3; i++)
+        mes[i][0] = msg[i] - 97;
+}
+ 
+void inverse() {
+    int i, j, k;
+    float p, q;
+    
+    for(i = 0; i < 3; i++)
+        for(j = 0; j < 3; j++) {
+            if(i == j)
+                b[i][j]=1;
+            else
+                b[i][j]=0;
+        }
+        
+    for(k = 0; k < 3; k++) {
+        for(i = 0; i < 3; i++) {
+            p = c[i][k];
+            q = c[k][k];
+                
+            for(j = 0; j < 3; j++) {
+                if(i != k) {
+                    c[i][j] = c[i][j]*q - p*c[k][j];
+                    b[i][j] = b[i][j]*q - p*b[k][j];
+                }
+            }
+        }
+    }
+    
+    for(i = 0; i < 3; i++)
+        for(j = 0; j < 3; j++)
+            b[i][j] = b[i][j] / c[i][i];
+    
+    printf("\n\nInverse Matrix is:\n");
+    for(i = 0; i < 3; i++) {
+        for(j = 0; j < 3; j++)
+            printf("%d ", b[i][j]);
+        
+        printf("\n");
+    }
+}
